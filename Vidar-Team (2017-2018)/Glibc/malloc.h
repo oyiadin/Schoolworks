@@ -1,5 +1,6 @@
 #include <stddef.h>
 #include <unistd.h>
+#include <stdbool.h>
 
 typedef struct Block {
   void *ptr;
@@ -8,11 +9,15 @@ typedef struct Block {
   bool available;
 } Block;
 
-unsigned int g_avl_mem = 0, g_max_avl = 0;
+unsigned int g_max_avl = 0;
 struct Block *g_ptr_blk = NULL, *g_ptr_blk_end = NULL;
 const unsigned int g_blk_sz = sizeof(struct Block);
 
-inline Block *_new_block(Block *ptr, size_t size) {
+inline Block *_new_block(Block *ptr, size_t size);
+void *malloc(size_t size);
+void free(void *ptr);
+
+Block *_new_block(Block *ptr, size_t size) {
     Block block;
     block.ptr = (void *)((char *) ptr + g_blk_sz);
     block.size = size;
@@ -49,13 +54,13 @@ void *malloc(size_t size) {
                         void *ptr_new_mem = sbrk(g_blk_sz);
                         if (ptr_new_mem == (void *) -1)
                             return (void *) -1;
-                        Block *ptr_new_block = _new_block(
+                        Block *ptrnew_block = _new_block(
                             (Block *) ptr_new_mem, at->size - size);
-                        ptr_new_block->ptr = (void *)((char *) at->ptr + size);
-                        ptr_new_block->available = true;
+                        ptrnew_block->ptr = (void *)((char *) at->ptr + size);
+                        ptrnew_block->available = true;
 
-                        ptr_new_block->next = at->next;
-                        at->next = ptr_new_block;
+                        ptrnew_block->next = at->next;
+                        at->next = ptrnew_block;
                         at->available = false;
 
                         return (void *) at->ptr;
