@@ -1,6 +1,6 @@
 #include <stdio.h>
 #include <string.h>
-#include "my_malloc.c"
+#include "malloc.h"
 
 char *f() {
 	char *ptr = (char *) malloc(0x10);
