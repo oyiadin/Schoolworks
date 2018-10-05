@@ -1,6 +1,6 @@
 #include <iostream>
 #include <string>
-#include "../predefine.h"
+#include "predefine.h"
 #include "list.h"
 
 using namespace std;
