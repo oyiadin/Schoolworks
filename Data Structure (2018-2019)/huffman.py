@@ -101,7 +101,7 @@ if __name__ == '__main__':
         decoded = ''.join(huff.decode(encoded))
         print('d>', decoded)
 
-        original_bits_per_character = math.ceil(math.log(len(raw), 2))
-        huffman_bits_per_character = len(encoded) / len(raw)
-        print('====> {}% <===='.format(
-            100 * huffman_bits_per_character / original_bits_per_character))
+        original_bits = \
+            math.ceil(math.log(len(huff.table), 2)) * len(raw)
+        huffman_bits = len(encoded)
+        print('====> {}% <===='.format(100 * huffman_bits / original_bits))
