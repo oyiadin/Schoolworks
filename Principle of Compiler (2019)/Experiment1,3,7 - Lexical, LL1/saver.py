@@ -7,6 +7,7 @@ from typing import overload, List
 from idtable import IdentifierTable
 from tokens import *
 
+__all__ = ('Saver',)
 
 class Saver(object):
     @overload

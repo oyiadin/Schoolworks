@@ -1,0 +1,8 @@
+_a1 := 12 + 23*5;
+_a1++;
+
+_A1 := 666;
+
+if ((_a1 = 5 * 23 + 12 +1) and (_A1 = 666)) begin
+        print("Test passed");
+end

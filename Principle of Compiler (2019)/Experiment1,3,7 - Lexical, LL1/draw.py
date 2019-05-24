@@ -1,6 +1,9 @@
 # coding=utf-8
+from graphviz import Digraph
 
 Epsilon = ...
+
+__all__ = ('DotShow',)
 
 
 class DotShow(object):
@@ -21,7 +24,6 @@ class DotShow(object):
                              label=ch if ch is not Epsilon else 'ε')
 
     def show(self):
-        from graphviz import Digraph
         dot = Digraph(comment='The Illustration')
         self._show__create_nodes(dot)
         self._show__draw_connections(dot)

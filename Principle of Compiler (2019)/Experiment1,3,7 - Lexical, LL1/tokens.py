@@ -3,11 +3,16 @@ from typing import Any
 import enum
 
 __all__ = (
-    'Token', 'TokenType', 'Keyword', 'OP', 'op2enum'
+    'TokenType', 'Keyword', 'OP', 'op2enum', 'Token'
 )
 
 
-class TokenType(enum.Enum):
+class MyEnum(enum.Enum):
+    def __str__(self):
+        return self._name_
+
+
+class TokenType(MyEnum):
     ID = 0
     KEYWORD = 1
     NUM = 2
@@ -15,7 +20,7 @@ class TokenType(enum.Enum):
     STR = 4
 
 
-class Keyword(enum.Enum):
+class Keyword(MyEnum):
     BEGIN = 0
     END = 1
     IF = 2
@@ -29,7 +34,7 @@ class Keyword(enum.Enum):
     NOT = 10
 
 
-class OP(enum.Enum):
+class OP(MyEnum):
     ADD = 0
     MINUS = 1
     MUL = 2
@@ -47,6 +52,7 @@ class OP(enum.Enum):
     RIGHT_PAR = 14
     SEMICOLON = 15
     COMMENT = 16
+
 
 op2enum = {
     '+': OP.ADD,
@@ -77,3 +83,14 @@ class Token(object):
 
     def __repr__(self):
         return "<Token: ({}, {})>".format(self.tp, self.attr)
+
+    def __str__(self):
+        return str(self.attr)
+
+    def __eq__(self, other):
+        if isinstance(other, Token):
+            return self.tp == other.tp and self.attr == other.attr
+        return False
+
+    def __hash__(self):
+        return hash(self.__repr__())

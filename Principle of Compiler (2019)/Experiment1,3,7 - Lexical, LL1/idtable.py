@@ -1,6 +1,7 @@
 # coding=utf-8
 import os
-import struct
+
+__all__ = ('IdentifierTable',)
 
 
 class IdentifierTable(object):

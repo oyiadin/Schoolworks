@@ -7,9 +7,11 @@ from pprint import pprint
 
 from analyzer import Analyser
 from idtable import IdentifierTable
+from tokens import *
 from regex import *
 from saver import Saver
 
+from LL1 import *
 
 parser = argparse.ArgumentParser()
 
@@ -57,11 +59,36 @@ def main(args):
     except SyntaxError:
         sys.exit(-1)
 
-    pprint(idtable)
-    Saver(idtable).saveto(args.output)
+    with Language() as lang:
+        E = Nonterminal('E')
+        EE = Nonterminal("E'")
+        T = Nonterminal('T')
+        TT = Nonterminal("T'")
+        F = Nonterminal('F')
+        A = Nonterminal('A')
+        M = Nonterminal('M')
 
-    pprint(tokens)
-    Saver(tokens).saveto(args.output)
+        E.to(T, EE)
+        EE.to(A, T, EE).to()
+        T.to(F, TT)
+        TT.to(M, F, TT).to()
+        F.to(
+            Token(TokenType.OP, OP.LEFT_PAR),
+            E,
+            Token(TokenType.OP, OP.RIGHT_PAR))  \
+         .to(TokenType.NUM)
+        A.to(Token(TokenType.OP, OP.ADD)).to(Token(TokenType.OP, OP.MINUS))
+        M.to(Token(TokenType.OP, OP.MUL)).to(Token(TokenType.OP, OP.DIV))
+
+        lang.preprocess()
+
+    print(lang.analyze(tokens))
+
+    # pprint(idtable)
+    # Saver(idtable).saveto(args.output)
+    #
+    # pprint(tokens)
+    # Saver(tokens).saveto(args.output)
 
 
 if __name__ == '__main__':
