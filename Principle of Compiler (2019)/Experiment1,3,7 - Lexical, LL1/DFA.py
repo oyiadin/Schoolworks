@@ -1,5 +1,6 @@
 # coding=utf-8
-from typing import List, Set, overload
+from __future__ import annotations
+from typing import List, Set, overload, NoReturn, Any
 
 from NFA import *
 from draw import DotShow
@@ -16,11 +17,11 @@ class DFA_State(object):
         self.map = {}
         DFA_State.count += 1
 
-    def map_to(self, to, ch):
+    def map_to(self, to: DFA_State, ch: str) -> NoReturn:
         assert self.map.get(ch) is None
         self.map[ch] = to
 
-    def transfer(self, ch):
+    def transfer(self, ch) -> DFA_State:
         return self.map[ch]
 
     def __repr__(self):
@@ -38,7 +39,14 @@ class DFA(DotShow):
 
         self.build_from_NFA(frm)
 
-    def build_from_NFA(self, nfa: NFA):
+    def possible_next_chars(self, states: Set[NFA_State]) -> Set[Any]:
+        ret = set()
+        for state in states:
+            ret.update(state.map.keys())
+        ret.discard(Epsilon)
+        return ret
+
+    def build_from_NFA(self, nfa: NFA) -> NoReturn:
         self.q0 = self.new_state()
         self.states.add(self.q0)
 
@@ -49,7 +57,7 @@ class DFA(DotShow):
         current = 0
 
         while current < total:
-            for ch in nfa.chars:
+            for ch in self.possible_next_chars(states[current]):
                 new_states = self.edge(states[current], ch)  # type: Set[NFA_State]
                 if new_states == set():
                     continue  # 如果是空集，直接跳过
@@ -96,17 +104,17 @@ class DFA(DotShow):
         return self.epsilon_closure(to_states)
 
 
-    def new_state(self):
+    def new_state(self) -> DFA_State:
         q = DFA_State()
         self.states.add(q)
         return q
 
-    def accept(self, q: DFA_State):
+    def accept(self, q: DFA_State) -> NoReturn:
         self.accept_states.add(q)
 
-    def _show__draw_connections(self, dot):
+    def _show__draw_connections(self, dot) -> NoReturn:
         for frm in self.states:
             for ch in frm.map:
                 dot.edge('S{}'.format(frm.id),
                          'S{}'.format(frm.map[ch].id),
-                         label=ch if ch is not Epsilon else 'ε')
+                         label=str(ch) if ch is not Epsilon else 'ε')

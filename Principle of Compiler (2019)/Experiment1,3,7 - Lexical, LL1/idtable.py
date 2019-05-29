@@ -9,14 +9,14 @@ class IdentifierTable(object):
         self.count = 0
         self.table = {}
 
-    def new_ID(self, x: str):
+    def new_ID(self, x: str) -> int:
         assert self.table.get(x) is None
         self.table[x] = self.count
         self.count += 1
 
         return self.table[x]
 
-    def get_ID(self, x: str):
+    def get_ID(self, x: str) -> int:
         result = self.table.get(x)
         if result is None:
             return self.new_ID(x)

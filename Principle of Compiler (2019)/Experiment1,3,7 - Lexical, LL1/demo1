@@ -1,3 +1,0 @@
-# This is a comment!
-x := "Hello# "
-print(x @ "World!")

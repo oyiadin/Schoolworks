@@ -7,102 +7,128 @@ from pprint import pprint
 
 from analyzer import Analyser
 from idtable import IdentifierTable
-from tokens import *
 from regex import *
 from saver import Saver
+from language import *
 
-from LL1 import *
 
 parser = argparse.ArgumentParser()
+parser.add_argument('--debug-off', action='store_false')
+parser.add_argument('--demo-fa', action='store_true')
+parser.add_argument('--demo-load', type=str)
 
-parser.add_argument('file', nargs='?', type=argparse.FileType('r'),
-                    default=sys.stdin)
+subparsers = parser.add_subparsers(dest='mode')
 
-parser.add_argument('-o', '--output', type=str)
-parser.add_argument('--demo', type=str)
+parser_lexical = subparsers.add_parser('lexical')
+parser_syntax = subparsers.add_parser('syntax')
+parser_semantic = subparsers.add_parser('semantic')
+
+parser_lexical.add_argument('--in', type=argparse.FileType('r'), required=True)
+parser_lexical.add_argument('--out', type=str, required=True)
+
+parser_syntax.add_argument('--lexical-load-from', type=str, required=True)
+parser_syntax.add_argument('--production-load-from', type=str, required=True)
+parser_syntax.add_argument('--lang', type=str, choices=['LL1', 'SLR1'],
+                           required=True)
 
 args = parser.parse_args()
 
 
-def demo_show_fa():
+def demo_fa(args):
     pattern = Concat(
         AnyTimes(Alter(Match("a"), Match("b"))),
         Match("abb")
     )
 
-    regex = pattern
-    regex.compile()
-    regex.show_nfa()
-    regex.show_dfa()
+    pattern.compile()
+    pattern.show_nfa()
+    pattern.show_dfa()
 
 
 def demo_load(args):
-    assert args.output and os.path.isdir(args.output)
+    path = args.demo_load
 
     idtable = IdentifierTable()
     tokens = []
 
-    Saver(idtable).loadfrom(args.output)
+    Saver(idtable).loadfrom(path)
     pprint(idtable)
 
-    Saver(tokens).loadfrom(args.output)
+    Saver(tokens).loadfrom(path)
     pprint(tokens)
 
 
-def main(args):
-    assert args.file
-    assert args.output and os.path.isdir(args.output)
+def mode_lexical(args):
+    infile = args.__dict__['in']
 
     analyser = Analyser()
     try:
-        idtable, tokens = analyser.analyse(args.file.readlines())
+        idtable, tokens = analyser.analyse(infile.readlines())
     except SyntaxError:
         sys.exit(-1)
 
-    with Language() as lang:
-        E = Nonterminal('E')
-        EE = Nonterminal("E'")
-        T = Nonterminal('T')
-        TT = Nonterminal("T'")
-        F = Nonterminal('F')
-        A = Nonterminal('A')
-        M = Nonterminal('M')
+    if not args.debug_off:
+        pprint(idtable)
+        pprint(tokens)
 
-        E.to(T, EE)
-        EE.to(A, T, EE).to()
-        T.to(F, TT)
-        TT.to(M, F, TT).to()
-        F.to(
-            Token(TokenType.OP, OP.LEFT_PAR),
-            E,
-            Token(TokenType.OP, OP.RIGHT_PAR))  \
-         .to(TokenType.NUM)
-        A.to(Token(TokenType.OP, OP.ADD)).to(Token(TokenType.OP, OP.MINUS))
-        M.to(Token(TokenType.OP, OP.MUL)).to(Token(TokenType.OP, OP.DIV))
+    Saver(idtable).saveto(args.out)
+    Saver(tokens).saveto(args.out)
 
+
+def mode_syntax(args):
+    assert args.lexical_load_from and args.lang and args.production_load_from
+
+    lang_dict = dict(
+        LL1=LL1,
+        SLR1=SLR1
+    )
+
+    assert args.lang.upper() in lang_dict
+
+    with lang_dict.get(args.lang.upper())() as lang:
+        __import__(args.production_load_from)
         lang.preprocess()
 
-    print(lang.analyze(tokens))
+    if args.lang.upper() == 'LL1':
+        print('The language `{}` {} LL(1)'  \
+              .format(args.production_load_from,
+                      'is' if lang.is_LL1() else "isn't"))
+    elif args.lang.upper() == 'SLR1':
+        print('The language `{}` {} SLR(1)' \
+              .format(args.production_load_from,
+                      'is' if lang.is_SLR1() else "isn't"))
 
-    # pprint(idtable)
-    # Saver(idtable).saveto(args.output)
-    #
-    # pprint(tokens)
-    # Saver(tokens).saveto(args.output)
+    tokens = []
+    Saver(tokens).loadfrom(args.lexical_load_from)
+
+    pprint(lang.analyze(tokens))
+
+    if args.lang.upper() == 'SLR1':
+        lang.nfa.show()
+        input('Showing NFA, press Enter to continue >>> ')
+        lang.dfa.show()
+        input('Showing DFA, press Enter to continue >>> ')
+
+
+def mode_semantic(args):
+    pass
 
 
 if __name__ == '__main__':
-    if args.demo:
-        demo_mode = args.demo.lower().strip()
+    if not args.debug_off:
+        print(args)
 
-        if demo_mode == 'fa':
-            demo_show_fa()
+    if args.demo_fa:
+        demo_fa(args)
 
-        elif demo_mode == 'load':
-            demo_load(args)
+    elif args.demo_load:
+        demo_load(args)
 
-        else:
-            main(args)
+    elif args.mode == 'lexical':
+        mode_lexical(args)
 
-    else:
-        main(args)
+    elif args.mode == 'syntax':
+        mode_syntax(args)
+
+    elif args.mode == 'semantic':
+        mode_semantic(args)

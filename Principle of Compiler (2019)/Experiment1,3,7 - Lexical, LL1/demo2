@@ -1,7 +1,0 @@
-sum := 0
-x := 100  # Let's do some assignments first
-while x > 0 begin
-    # Calculate the sum of 1..100
-    sum := sum + x
-end
-print(x)

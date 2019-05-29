@@ -21,7 +21,7 @@ class DotShow(object):
                 for to in frm.map[ch]:
                     dot.edge('S{}'.format(frm.id),
                              'S{}'.format(to.id),
-                             label=ch if ch is not Epsilon else 'ε')
+                             label=str(ch) if ch is not Epsilon else 'ε')
 
     def show(self):
         dot = Digraph(comment='The Illustration')

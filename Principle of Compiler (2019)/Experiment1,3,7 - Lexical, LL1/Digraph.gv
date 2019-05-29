@@ -1,18 +1,74 @@
 // The Illustration
 digraph {
-	S4 [shape=box]
-	S1
-	S3
+	S7
+	S12
+	S21
+	S9
+	S14
 	S0
+	S5
+	S11
+	S16
+	S23
+	S13
+	S17
+	S15
+	S8
+	S24
+	S1
+	S19
+	S3
+	S4
+	S22
+	S10
+	S6
+	S18
 	S2
-	S4 -> S1 [label=a]
-	S4 -> S2 [label=b]
-	S1 -> S1 [label=a]
-	S1 -> S3 [label=b]
-	S3 -> S1 [label=a]
-	S3 -> S4 [label=b]
-	S0 -> S1 [label=a]
-	S0 -> S2 [label=b]
-	S2 -> S1 [label=a]
-	S2 -> S2 [label=b]
+	S20
+	S12 -> S4 [label="NT:F"]
+	S12 -> S18 [label="NT:T"]
+	S12 -> S6 [label=L_PAR]
+	S12 -> S8 [label=NUM]
+	S9 -> S16 [label="NT:F"]
+	S9 -> S6 [label=L_PAR]
+	S9 -> S8 [label=NUM]
+	S0 -> S1 [label=NUM]
+	S0 -> S2 [label="NT:S"]
+	S5 -> S12 [label=ADD]
+	S5 -> S13 [label=MINUS]
+	S5 -> S14 [label="NT:E'"]
+	S16 -> S9 [label=DIV]
+	S16 -> S10 [label=MUL]
+	S16 -> S21 [label="NT:T'"]
+	S13 -> S4 [label="NT:F"]
+	S13 -> S19 [label="NT:T"]
+	S13 -> S6 [label=L_PAR]
+	S13 -> S8 [label=NUM]
+	S17 -> S9 [label=DIV]
+	S17 -> S10 [label=MUL]
+	S17 -> S22 [label="NT:T'"]
+	S15 -> S20 [label=R_PAR]
+	S1 -> S3 [label=ASSIGN]
+	S19 -> S12 [label=ADD]
+	S19 -> S13 [label=MINUS]
+	S19 -> S24 [label="NT:E'"]
+	S3 -> S4 [label="NT:F"]
+	S3 -> S5 [label="NT:T"]
+	S3 -> S6 [label=L_PAR]
+	S3 -> S7 [label="NT:E"]
+	S3 -> S8 [label=NUM]
+	S4 -> S9 [label=DIV]
+	S4 -> S10 [label=MUL]
+	S4 -> S11 [label="NT:T'"]
+	S10 -> S17 [label="NT:F"]
+	S10 -> S6 [label=L_PAR]
+	S10 -> S8 [label=NUM]
+	S6 -> S4 [label="NT:F"]
+	S6 -> S5 [label="NT:T"]
+	S6 -> S6 [label=L_PAR]
+	S6 -> S15 [label="NT:E"]
+	S6 -> S8 [label=NUM]
+	S18 -> S12 [label=ADD]
+	S18 -> S13 [label=MINUS]
+	S18 -> S23 [label="NT:E'"]
 }

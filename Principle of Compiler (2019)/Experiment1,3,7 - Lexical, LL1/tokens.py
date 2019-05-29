@@ -42,14 +42,14 @@ class OP(MyEnum):
     LT = 4
     GT = 5
     EQ = 6
-    ASSIGNMENT = 7
+    ASSIGN = 7
     LE = 8
     GE = 9
     NEQ = 10
     INCR = 11
     DECR = 12
-    LEFT_PAR = 13
-    RIGHT_PAR = 14
+    L_PAR = 13
+    R_PAR = 14
     SEMICOLON = 15
     COMMENT = 16
 
@@ -62,14 +62,14 @@ op2enum = {
     '>': OP.LT,
     '<': OP.GT,
     '=': OP.EQ,
-    ':=': OP.ASSIGNMENT,
+    ':=': OP.ASSIGN,
     '>=': OP.LE,
     '<=': OP.GE,
     '!=': OP.NEQ,
     '++': OP.INCR,
     '--': OP.DECR,
-    '(': OP.LEFT_PAR,
-    ')': OP.RIGHT_PAR,
+    '(': OP.L_PAR,
+    ')': OP.R_PAR,
     ';': OP.SEMICOLON,
     '#': OP.COMMENT,
 }
@@ -85,7 +85,12 @@ class Token(object):
         return "<Token: ({}, {})>".format(self.tp, self.attr)
 
     def __str__(self):
-        return str(self.attr)
+        if self.tp == TokenType.ID:
+            return "ID:{}".format(self.attr)
+        elif self.tp == TokenType.STR:
+            return '"{}"'.format(self.attr)
+        else:
+            return str(self.attr)
 
     def __eq__(self, other):
         if isinstance(other, Token):

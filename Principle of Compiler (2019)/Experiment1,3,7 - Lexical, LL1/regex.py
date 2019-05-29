@@ -33,6 +33,7 @@ class RegEx(object):
     def compile(self):
         # build NFA
         self.nfa = NFA()
+        self.nfa.new_state()  # q0
         to = self._compile(frm=self.nfa.q0, nfa=self.nfa)
         self.nfa.accept(to)
         # construct a DFA from NFA

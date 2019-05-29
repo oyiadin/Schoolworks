@@ -1,6 +1,7 @@
 # coding=utf-8
-
+from __future__ import annotations
 import string
+from typing import NoReturn, Set
 
 from draw import DotShow
 
@@ -16,13 +17,13 @@ class NFA_State(object):
         self.map = {}
         NFA_State.count += 1
 
-    def map_to(self, to, ch):
+    def map_to(self, to: NFA_State, ch: str) -> NoReturn:
         if self.map.get(ch) is None:
             self.map[ch] = {to}
         else:
             self.map[ch].add(to)
 
-    def transfer(self, ch):
+    def transfer(self, ch) -> Set[NFA_State]:
         return self.map[ch]
 
     def __repr__(self):
@@ -34,15 +35,19 @@ class NFA_State(object):
 
 class NFA(DotShow):
     def __init__(self):
-        self.q0 = NFA_State()
-        self.states = {self.q0}
+        self.q0 = None
+        self.states = set()
         self.accept_states = set()
         self.chars = string.printable
 
-    def new_state(self):
+    def new_state(self) -> NFA_State:
         q = NFA_State()
         self.states.add(q)
+
+        if self.q0 is None:
+            self.q0 = q
+
         return q
 
-    def accept(self, q: NFA_State):
+    def accept(self, q: NFA_State) -> NoReturn:
         self.accept_states.add(q)
