@@ -98,16 +98,13 @@ def mode_syntax(args):
               .format(args.production_load_from,
                       'is' if lang.is_SLR1() else "isn't"))
 
+    if args.lang.upper() == 'SLR1':
+        lang.dfa.show()
+
     tokens = []
     Saver(tokens).loadfrom(args.lexical_load_from)
 
     pprint(lang.analyze(tokens))
-
-    if args.lang.upper() == 'SLR1':
-        lang.nfa.show()
-        input('Showing NFA, press Enter to continue >>> ')
-        lang.dfa.show()
-        input('Showing DFA, press Enter to continue >>> ')
 
 
 def mode_semantic(args):

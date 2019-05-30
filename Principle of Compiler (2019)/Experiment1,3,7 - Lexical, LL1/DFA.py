@@ -32,12 +32,13 @@ class DFA_State(object):
 
 
 class DFA(DotShow):
-    def __init__(self, frm: NFA):
+    def __init__(self, frm: NFA = None):
         self.q0 = None
         self.states = set()  # type: Set[DFA_State]
         self.accept_states = set()  # type: Set[DFA_State]
 
-        self.build_from_NFA(frm)
+        if frm is not None:
+            self.build_from_NFA(frm)
 
     def possible_next_chars(self, states: Set[NFA_State]) -> Set[Any]:
         ret = set()

@@ -4,12 +4,13 @@ from typing import Optional, Dict, Tuple, List, Any, Set, NoReturn, Union
 
 from DFA import DFA, DFA_State
 from NFA import NFA, NFA_State, Epsilon
-from tokens import TokenType
-
+from tokens import TokenType, Token
 
 __all__ = ('Nonterminal', 'End', 'LL1', 'SLR1')
 
 context = None  # type: Optional[LL1]
+
+MatchAny = ...
 
 
 def context_checker(func):
@@ -53,6 +54,7 @@ End = SpecialSymbol('$')
 
 class Language(object):
     def __init__(self):
+        self.possible_components = set()
         self.startfrom = None
         self.nonterminals = []  # type: List[Nonterminal]
         self.productions = {}  # type: Dict[Nonterminal, List[Tuple[Any]]]
@@ -64,6 +66,7 @@ class Language(object):
         if not len(self.nonterminals):
             self.startfrom = nt
         self.nonterminals.append(nt)
+        self.possible_components.add(nt)
 
     def add_production(self, frm: Nonterminal, seq: Tuple[Any]) -> NoReturn:
         list = self.productions.get(frm)
@@ -71,6 +74,9 @@ class Language(object):
             self.productions[frm] = [seq]
         else:
             self.productions[frm].append(seq)
+
+        for component in seq:
+            self.possible_components.add(component)
 
     @context_checker
     def remove_left_recursion(self) -> None:
@@ -355,14 +361,14 @@ class SLR1_Item(object):
         return hash(self.__repr__())
 
     def __repr__(self):
-        return "<SLR1_Item at {}, {!s} => {}>".format(
+        return "<Item at {}, {!s} => {}>".format(
             self.at,
             self.nt,
             ', '.join(map(str, self.seq)))
 
 
 class LR_Action(object):
-    def __init__(self, tp: str, value: int = None):
+    def __init__(self, tp: str, value: Any = None):
         assert tp in ('shift', 'reduce', 'accept'),  \
             "argument `tp` must be one of: 'shift', 'reduce' and 'accept'"
         self.tp = tp
@@ -377,86 +383,206 @@ class LR_Action(object):
     def is_accept(self):
         return self.tp == 'accept'
 
+    def __repr__(self):
+        if self.is_shift():
+            return "<Shift S{}>".format(self.value.id)
+        elif self.is_reduce():
+            return "<Reduce {!s} => {}>".format(
+                self.value['frm'],
+                ', '.join(map(str, self.value['to'])))
+        elif self.is_accept():
+            return "<Accept>"
+        else:
+            return "<ERROR>"
+
 
 class SLR1(Language):
     def __init__(self):
         super().__init__()
         self.items = None  # type: Optional[Dict[Nonterminal, List[SLR1_Item]]]
         # The elements of the list must be `at` ascending
-
-        self.nfa = None  # type: Optional[NFA]
         self.dfa = None  # type: Optional[DFA]
 
-        self.item_to_nfa_state = None  # type: Optional[Dict[SLR1_Item, NFA_State]]
-
     def is_SLR1(self):
-        return True  # TODO: XD
+        for group in self.groups:
+            reduce_follow = []
+            shift_follow = set()
+            for item in group:
+                if item.at == len(item.seq):
+                    reduce_follow.append(self.follow(item.nt))
+                else:
+                    shift_follow.add(item.seq[item.at])
+
+            follow = reduce_follow + [shift_follow]
+
+            for subset1 in follow:
+                for subset2 in follow:
+                    if subset1 is not subset2:
+                        if subset1.intersection(subset2):
+                            return False
+
+        return True
+
 
     def preprocess(self) -> NoReturn:
-        self.remove_left_recursion()
-        self.do_left_factoring()
+        # self.remove_left_recursion()
+        # self.do_left_factoring()
 
         self.init_items()
-        self.build_NFA()
-        self.nfa.show()
-        self.dfa = DFA(self.nfa)
+        self.calc_follow()
+        self.build()
 
-        if self.is_SLR1():
-            self.calc_parsing_table()
-
-    @context_checker
-    def init_items(self) -> None:
+    def init_items(self) -> NoReturn:
         self.items = {nt: [] for nt in self.nonterminals}
         for nt in self.nonterminals:
             for production in self.productions[nt]:
                 for at in range(0, len(production)+1):
                     self.items[nt].append(SLR1_Item(nt, production, at))
 
-    def build_NFA(self) -> NoReturn:
-        self.nfa = NFA()
-        states = {item: self.nfa.new_state()
-                  for nt in self.nonterminals  \
-                  for item in self.items[nt]}  # type: Dict[SLR1_Item, NFA_State]
-        self.item_to_nfa_state = states
-
-        def expand(frm: SLR1_Item) -> List[SLR1_Item]:
-            ret = [frm]  # type: List[SLR1_Item]
-            at = 0
-
-            while at < len(ret):  # 迭代"起始项目"
-                if ret[at].at == len(ret[at].seq):  # 如果本项目已走到头
-                    at += 1
-                    continue
-                next_component = ret[at].seq[ret[at].at]
+    def closure(self, items: Union[Set[SLR1_Item], List[SLR1_Item]]) -> Set[SLR1_Item]:
+        ret = list(items)
+        at = 0
+        while at < len(ret):
+            item = ret[at]
+            if item.at < len(item.seq):
+                next_component = item.seq[item.at]
                 if isinstance(next_component, Nonterminal):
-                    # 如果当前项目的下一个符号是非终结符
-                    for item in self.items[next_component]:
-                        if item.at == 0 and item not in ret:
-                            ret.append(item)
-                at += 1
+                    for inner_item in self.items[next_component]:
+                        if inner_item.at == 0 and inner_item not in ret:
+                            ret.append(inner_item)
+            at += 1
+        return set(ret)
 
-            return ret[1:]  # 起始项目已经被特殊处理过，去除
+    def go(self, items: Set[SLR1_Item], via: Any) -> Set[SLR1_Item]:
+        ret = set()
+        for item in items:
+            if item.at < len(item.seq) and item.seq[item.at] == via:
+                ret.add(SLR1_Item(item.nt, item.seq, item.at+1))
 
-        def build_from(frm: SLR1_Item) -> NoReturn:
-            if frm.at < len(frm.seq):
-                next_item = SLR1_Item(frm.nt, frm.seq, frm.at+1)
-                states[frm].map_to(states[next_item], frm.seq[frm.at])
+        return self.closure(ret)
 
-                tos = expand(frm)
-                for item in tos:
-                    states[frm].map_to(states[item], Epsilon)
+    def build(self):
+        def repair_tables(state: DFA_State):
+            if state not in self.action_table:
+                self.action_table[state] = {}
+            if state not in self.goto_table:
+                self.goto_table[state] = {}
 
-        for nt in self.nonterminals:
-            for item in self.items[nt]:
-                build_from(item)
+        self.action_table: Dict[DFA_State, Dict[Any, LR_Action]] = {}
+        self.goto_table: Dict[DFA_State, Dict[Any, DFA_State]] = {}
+
+        self.dfa = DFA()
+        item0 = self.items[self.nonterminals[0]][0]
+        item_acc = SLR1_Item(item0.nt, item0.seq, len(item0.seq))
+        I0 = self.closure({item0})
+        groups = [I0]
+        self.dfa.q0 = self.dfa.new_state()
+        states = [self.dfa.q0]
+        at = 0
+
+        while at < len(groups):
+            repair_tables(states[at])
+            for item in groups[at]:
+                if item.at == len(item.seq):
+                    for via in self.follow(item.nt):
+                        self.action_table[states[at]][via] =  \
+                            LR_Action('reduce', dict(frm=item.nt, to=item.seq))
+
+            # 把 accept 放 reduce 后边，不然 accept 会被覆盖了
+            if item_acc in groups[at]:
+                self.action_table[states[at]][End] = LR_Action('accept')
+                self.dfa.accept(states[at])
+
+            for via in self.possible_components:
+                result = self.go(groups[at], via)
+                if result:
+                    if result not in groups:
+                        groups.append(result)
+                        to_state = self.dfa.new_state()
+                        states.append(to_state)
+                    else:
+                        to_state = states[groups.index(result)]
+
+                    states[at].map_to(to_state, via)
+                    if isinstance(via, Nonterminal):
+                        self.goto_table[states[at]][via] = to_state
+                    else:
+                        self.action_table[states[at]][via] =  \
+                            LR_Action('shift', to_state)
+            at += 1
+
+        self.groups = groups
+        self.states = states
 
     def analyze(self, seq: List[Any]) -> bool:
-        pass
+        seq = seq + [End]
+        states = [self.dfa.q0]
+        symbols = [End]
 
-    def calc_parsing_table(self):
-        self.action_table: Dict[DFA_State, Dict[Any, LR_Action]] = {
-            state: {} for state in self.dfa.states}
-        self.goto_table: Dict[DFA_State, Dict[Any, DFA_State]] = {
-            state: {} for state in self.dfa.states}
+        print('{}-+-{}-+-{}-+-{}-+-{}'.format(
+            '-' * 25, '-' * 50, '-' * 45, '-' * 35, '-' * 10))
+        print('{:^25} | {:^50} | {:^45} | {:^35} | {:^10}'.format(
+            'STATES STACK', 'SYMBOLS STACK', 'SEQUENCE', 'ACTION', 'GOTO'))
+        print('{}-+-{}-+-{}-+-{}-+-{}'.format(
+            '-' * 25, '-' * 50, '-' * 45, '-' * 35, '-' * 10))
+
+        def report_status(at, action=None, goto=None):
+            _states = ' '.join([str(i.id) for i in states])
+            _symbols = ' '.join([str(i) for i in symbols])
+            _seq = ' '.join([str(i) for i in seq[at:]])
+            _action = str(action) if action is not None else ''
+            _goto = 'S{}'.format(str(goto.id)) if goto is not None else ''
+
+            print('{:<25} | {:<50} | {:>45} | {:<35} | {:<10}'.format(
+                _states, _symbols, _seq, _action, _goto))
+
+        at = -1
+        while True:
+            at += 1
+            if at >= len(seq):
+                print('=' * 80)
+                print('Unexpected EOF.')
+                return False
+
+            try:
+                candidates = self.action_table[states[-1]]
+                for key in candidates:
+                    if key == seq[at]  \
+                            or (isinstance(key, TokenType)
+                                and seq[at] is not End and seq[at].tp == key):
+                        action = candidates[key]
+                        break
+                else:
+                    raise KeyError
+            except KeyError:
+                action = self.action_table[states[-1]].get(MatchAny, None)
+                if action is None:
+                    print('=' * 80)
+                    if seq[at] is End:
+                        print('Unexpected EOF.')
+                    else:
+                        print('Unexpected symbol: {}'.format(seq[at]))
+                    return False
+
+            if action.is_shift():
+                report_status(at, action)
+                states.append(action.value)
+                symbols.append(seq[at])
+
+            elif action.is_reduce():
+                idx = -(len(action.value['to'])+1)
+                report_status(at, action,
+                              self.goto_table[states[idx]].get(action.value['frm']))
+                if action.value['to']:  # 防止误处理 A => Epsilon 这种情况
+                    del states[-len(action.value['to']):]
+                    del symbols[-len(action.value['to']):]
+                symbols.append(action.value['frm'])
+                states.append(self.goto_table[states[-1]][symbols[-1]])
+
+                at -= 1
+
+            elif action.is_accept():
+                report_status(at, action)
+                return True
 
 
