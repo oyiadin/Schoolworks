@@ -60,7 +60,7 @@ class Huffman(object):
     def decode(self, cipher: str) -> list:
         assert self.btree, "call cons_btree() first"
         if not cipher:
-            return ''
+            return []
 
         decoded = []
         at = self.btree

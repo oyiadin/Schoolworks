@@ -20,6 +20,8 @@ static void interrupt_handler(int sig) {
 char filename[1024] = {0};
 
 int main(int argc, char const *argv[]) {
+    setvbuf(stdout, NULL, _IONBF, 0);
+
     signal(SIGINT, interrupt_handler);  // Register signals
     struct sockaddr_in serv_addr;
 
@@ -88,7 +90,7 @@ int main(int argc, char const *argv[]) {
             }
 
             if (res->IS_FILE) {
-                printf("[*] file part received: PACK_ID=%d, PACK_SIZE=%d\n",
+                printf("\r[*] file part received: PACK_ID=%d, PACK_SIZE=%d",
                        res->RES_PACK_ID, res->PACKET_SIZE);
                 read(sock, (void *) res_content, res->PACKET_SIZE);
 
@@ -108,11 +110,12 @@ int main(int argc, char const *argv[]) {
     if (flag) {
         close(sock);
         fclose(fd);
+        shutdown(sock, SHUT_RDWR);
         puts("interrupt");
         return -1;
     } else {
         fclose(fd);
-        printf("[*] finished, saved to %s\n", filename);
+        printf("\n[*] finished, saved to %s\n", filename);
     }
 
     return 0;

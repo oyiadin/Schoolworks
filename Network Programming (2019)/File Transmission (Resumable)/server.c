@@ -21,6 +21,8 @@
 
 
 int main(int argc, char const *argv[]) {
+    setvbuf(stdout, NULL, _IONBF, 0);
+
     struct sockaddr_in serv_addr, clnt_addr;
     socklen_t clnt_size = sizeof(clnt_addr);
 
@@ -87,7 +89,7 @@ int main(int argc, char const *argv[]) {
                     write(fd, (void *) res_content, res->PACKET_SIZE);
 
                 } else if (req->IS_FETCH_FILE) {
-                    printf("[!] fetch file, id=%d\n", req->REQ_PACK_ID);
+                    printf("\r[!] fetch file, id=%d", req->REQ_PACK_ID);
                     if (req->REQ_PACK_ID > total_length) {
                         RESPONSE_ERROR;
                         continue;
