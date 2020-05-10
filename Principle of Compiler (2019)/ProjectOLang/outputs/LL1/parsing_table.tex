@@ -1,0 +1,20 @@
+\resizebox{\textwidth}{!}{
+\begin{tabular}{|c|c|c|c|c|c|c|c|c|c|}
+\hline
+&L\_PAR&R\_PAR&TokenType.ID&ADD&MINUS&DIV&MUL&TokenType.NUM&\$\\
+\hline
+NT:E&NT:E => NT:T NT:E'&&NT:E => NT:T NT:E'&&&&&NT:E => NT:T NT:E'&\\
+\hline
+NT:E'&&NT:E' => &&NT:E' => NT:A NT:T NT:E'&NT:E' => NT:A NT:T NT:E'&&&&NT:E' => \\
+\hline
+NT:T&NT:T => NT:F NT:T'&&NT:T => NT:F NT:T'&&&&&NT:T => NT:F NT:T'&\\
+\hline
+NT:T'&&NT:T' => &&NT:T' => &NT:T' => &NT:T' => NT:M NT:F NT:T'&NT:T' => NT:M NT:F NT:T'&&NT:T' => \\
+\hline
+NT:F&NT:F => L\_PAR NT:E R\_PAR&&NT:F => TokenType.ID&&&&&NT:F => TokenType.NUM&\\
+\hline
+NT:A&&&&NT:A => ADD&NT:A => MINUS&&&&\\
+\hline
+NT:M&&&&&&NT:M => DIV&NT:M => MUL&&\\
+\hline
+\end{tabular}}

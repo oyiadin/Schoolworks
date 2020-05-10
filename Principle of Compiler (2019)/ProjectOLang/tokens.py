@@ -12,7 +12,7 @@ class MyEnum(enum.Enum):
         return self._name_
 
 
-class TokenType(MyEnum):
+class TokenType(enum.Enum):
     ID = 0
     KEYWORD = 1
     NUM = 2
@@ -81,6 +81,11 @@ class Token(object):
         self.tp = tp
         self.attr = attr
 
+    def __eq__(self, other):
+        if isinstance(other, Token):
+            return self.tp == other.tp and self.attr == other.attr
+        return False
+
     def __repr__(self):
         return "<Token: ({}, {})>".format(self.tp, self.attr)
 
@@ -91,11 +96,6 @@ class Token(object):
             return '"{}"'.format(self.attr)
         else:
             return str(self.attr)
-
-    def __eq__(self, other):
-        if isinstance(other, Token):
-            return self.tp == other.tp and self.attr == other.attr
-        return False
 
     def __hash__(self):
         return hash(self.__repr__())

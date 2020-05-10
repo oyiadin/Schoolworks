@@ -1,15 +1,15 @@
 # coding=utf-8
 import string
-from typing import List, overload, Tuple
+from typing import List, Tuple, Union
 
-from idtable import IdentifierTable
+from utils import IdentifierTable
 from regex import *
 from tokens import *
 
-__all__ = ('Analyser',)
+__all__ = ('Lexical',)
 
 
-class Analyser(object):
+class Lexical(object):
     def __init__(self):
         self.idtable = IdentifierTable()
 
@@ -43,8 +43,8 @@ class Analyser(object):
         while idx1 < len(content):
             idx2 = self.blank.matchstart(content[idx1:])
             if idx2 != -1:
-                part = content[idx1:idx1 + idx2]
-                print('===> Encountered with some blanks, ignored.\n')
+                # part = content[idx1:idx1 + idx2]
+                print('[==>] Result: Blanks\n')
                 idx1 += idx2
                 continue
 
@@ -55,11 +55,11 @@ class Analyser(object):
                     result.append(
                         Token(TokenType.KEYWORD, Keyword[part.upper()]))
                     print(
-                        '===> Encountered with a KEYWORD `{}`!\n'.format(part))
+                        '[==>] Result: Keyword `{}`\n'.format(part))
                 else:
                     ID = self.idtable.get_ID(part)
                     result.append(Token(TokenType.ID, ID))
-                    print('===> Encountered with an ID `{}`, id={}!\n'.format(
+                    print('[==>] Result: ID `{}` (id = {})\n'.format(
                         part, result[-1].attr))
 
                 idx1 += idx2
@@ -69,17 +69,17 @@ class Analyser(object):
             if idx2 != -1:
                 part = content[idx1:idx1 + idx2]
                 result.append(Token(TokenType.NUM, int(part)))
-                print('===> Encountered with a NUMBER `{}`!\n'.format(part))
+                print('[==>] Result: Number `{}`\n'.format(part))
 
                 idx1 += idx2
                 continue
 
             idx2 = self.string.matchstart(content[idx1:])
             if idx2 != -1:
-                part = content[
-                       idx1 + 1:idx1 + idx2 - 1]  # strip off the wrapper
+                part = content[idx1 + 1:idx1 + idx2 - 1]
+                # strip off the wrapper
                 result.append(Token(TokenType.STR, part))
-                print('===> Encountered with a STR `{}`!\n'.format(part))
+                print('[==>] Result: String `{}`\n'.format(part))
 
                 idx1 += idx2
                 continue
@@ -89,37 +89,30 @@ class Analyser(object):
                 part = content[idx1:idx1 + idx2]
 
                 if part == '#':
-                    print(
-                        '===> Oops, seems like this is a comment, skipping.\n')
+                    print('[==>] Result: Comments\n')
                     return result
 
                 else:
                     result.append(Token(TokenType.OP, op2enum[part]))
-                    print('===> Encountered with an OP `{}`!\n'.format(part))
+                    print('[==>] Result: Operator `{}`\n'.format(part))
                     idx1 += idx2
                     continue
 
             # sth error...
-            print('\n================ ERROR ================')
-            print(content)
-            print(' ' * idx1 + '^')
-            print('Error: unexpected character')
-            print('=======================================')
+            print('\n')
+            print('[ ! ] Unexpected symbol:')
+            print('[ > ]', content)
+            print('[ @ ]', ' ' * idx1 + '^')
 
             raise SyntaxError
 
         return result
 
-    @overload
-    def analyse(self, content: str) -> Tuple[IdentifierTable, List[Token]]:
-        ...
-    @overload
-    def analyse(self, content: List[str]) -> Tuple[
-        IdentifierTable, List[Token]]:
-        ...
-    def analyse(self, content):
+    def analyse(self, content: Union[str, List[str]])  \
+            -> Tuple[IdentifierTable, List[Token]]:
         if isinstance(content, str):
             return self.idtable, self._analyse(content)
+
         elif isinstance(content, list):
             ret = []
             for line in content:
